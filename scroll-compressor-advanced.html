@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スクロールコンプレッサー動作可視化</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+        
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .control-group label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .value-display {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-top: 4px;
+            text-align: center;
+        }
+        
+        .charts-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-wrapper {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            height: 400px;
+            position: relative;
+        }
+        
+        .chart-wrapper h2 {
+            color: #333;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        .demo-section {
+            background: #f0f4ff;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .demo-title {
+            color: #333;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .scroll-container {
+            background: white;
+            height: 150px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            overflow: auto;
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .scroll-content {
+            padding: 20px;
+            height: 400px;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .scroll-indicator {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .indicator-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            text-align: center;
+        }
+        
+        .indicator-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .indicator-value {
+            font-size: 1.3rem;
+            color: #764ba2;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        
+        .info-section {
+            background: #f0f4ff;
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 30px;
+        }
+        
+        .info-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .info-section p {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+        
+        .formula-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            color: #333;
+            border-left: 4px solid #764ba2;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .back-link:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .scroll-indicator {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 スクロールコンプレッサー動作可視化</h1>
+        <p class="subtitle">入力値と圧縮後の値をリアルタイムで比較</p>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>入力スクロール速度</label>
+                <input type="range" id="inputScrollSlider" min="0" max="100" step="1" value="50">
+                <div class="value-display" id="inputScrollDisplay">50</div>
+            </div>
+            
+            <div class="control-group">
+                <label>圧縮率（0-100%）</label>
+                <input type="range" id="compressionSlider" min="0" max="100" step="5" value="50">
+                <div class="value-display" id="compressionDisplay">50%</div>
+            </div>
+            
+            <div class="control-group">
+                <label>感度補正係数</label>
+                <input type="range" id="sensitivitySlider" min="0.5" max="2" step="0.1" value="1">
+                <div class="value-display" id="sensitivityDisplay">1.0x</div>
+            </div>
+        </div>
+        
+        <div class="charts-section">
+            <div class="chart-wrapper">
+                <h2>📈 入力値 vs 出力値</h2>
+                <canvas id="comparisonChart"></canvas>
+            </div>
+            
+            <div class="chart-wrapper">
+                <h2>📊 圧縮率による変化</h2>
+                <canvas id="compressionCurveChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <div class="demo-title">🎯 スクロール動作デモ</div>
+            <div class="scroll-container" id="scrollDemo">
+                <div class="scroll-content">スクロール可能なエリア</div>
+            </div>
+            
+            <div class="scroll-indicator">
+                <div class="indicator-box">
+                    <div class="indicator-label">入力スクロール位置</div>
+                    <div class="indicator-value" id="inputValue">0</div>
+                </div>
+                <div class="indicator-box">
+                    <div class="indicator-label">圧縮後の位置</div>
+                    <div class="indicator-value" id="outputValue">0</div>
+                </div>
+                <div class="indicator-box">
+                    <div class="indicator-label">圧縮率</div>
+                    <div class="indicator-value" id="compressionRate">0%</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h3>📖 スクロールコンプレッサーの仕組み</h3>
+            <p><strong>基本概念：</strong>スクロールコンプレッサーは、ユーザーのスクロール入力値を数学的に変換し、より自然で制御しやすいスクロール動作を実現します。</p>
+            
+            <p><strong>圧縮アルゴリズム：</strong></p>
+            <div class="formula-box">
+                output = input × (1 - compression_ratio × 0.7) × sensitivity<br>
+                <br>
+                ここで：<br>
+                • input：ユーザーのスクロール入力量<br>
+                • compression_ratio：圧縮率（0.0〜1.0）<br>
+                • sensitivity：感度補正係数<br>
+                • output：実際に適用されるスクロール量
+            </div>
+            
+            <p><strong>実装例：</strong></p>
+            <ul style="margin-left: 20px; color: #555; line-height: 1.8; margin-top: 10px;">
+                <li><strong>ゲーム開発：</strong>カメラの滑らかな動き、キャラクター操作の応答性向上</li>
+                <li><strong>Webアプリケーション：</strong>無限スクロール、ページスクロール、スムーズなUI操作</li>
+                <li><strong>データ可視化：</strong>グラフのズーム・パン操作、詳細度の自動調整</li>
+                <li><strong>アクセシビリティ：</strong>異なるマウス感度の環境差を吸収</li>
+            </ul>
+            
+            <p style="margin-top: 15px;"><strong>パラメータの役割：</strong></p>
+            <ul style="margin-left: 20px; color: #555; line-height: 1.8;">
+                <li><strong>圧縮率 0%：</strong>入力値をそのまま使用（圧縮なし）</li>
+                <li><strong>圧縮率 50%：</strong>入力値を約65%に削減</li>
+                <li><strong>圧縮率 100%：</strong>入力値を最小限に抑制（非常に遅い動き）</li>
+            </ul>
+        </div>
+        
+        <a href="index.html" class="back-link">← トップページに戻る</a>
+    </div>
+    
+    <script>
+        // DOM要素
+        const inputScrollSlider = document.getElementById('inputScrollSlider');
+        const compressionSlider = document.getElementById('compressionSlider');
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+        const inputScrollDisplay = document.getElementById('inputScrollDisplay');
+        const compressionDisplay = document.getElementById('compressionDisplay');
+        const sensitivityDisplay = document.getElementById('sensitivityDisplay');
+        const scrollDemo = document.getElementById('scrollDemo');
+        const inputValue = document.getElementById('inputValue');
+        const outputValue = document.getElementById('outputValue');
+        const compressionRate = document.getElementById('compressionRate');
+        
+        // チャート変数
+        let comparisonChart, compressionCurveChart;
+        
+        // 状態管理
+        let state = {
+            inputScroll: 50,
+            compression: 0.5,
+            sensitivity: 1.0
+        };
+        
+        // 圧縮計算関数
+        function calculateCompressedValue(input, compression, sensitivity) {
+            const compressionFactor = 1 - (compression * 0.7);
+            return input * compressionFactor * sensitivity;
+        }
+        
+        // チャート初期化
+        function initCharts() {
+            // 比較チャート
+            const ctx1 = document.getElementById('comparisonChart').getContext('2d');
+            
+            const inputValues = [];
+            const outputValues = [];
+            for (let i = 0; i <= 100; i += 5) {
+                inputValues.push(i);
+                outputValues.push(calculateCompressedValue(i, state.compression, state.sensitivity));
+            }
+            
+            comparisonChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: inputValues,
+                    datasets: [
+                        {
+                            label: '入力値（圧縮なし）',
+                            data: inputValues,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2,
+                        },
+                        {
+                            label: '出力値（圧縮後）',
+                            data: outputValues,
+                            borderColor: '#764ba2',
+                            backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 2,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: { font: { size: 11 }, color: '#333' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#666' },
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#666' },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+            
+            // 圧縮曲線チャート
+            const ctx2 = document.getElementById('compressionCurveChart').getContext('2d');
+            
+            const compressionRates = [0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0];
+            const datasets = compressionRates.map((rate, index) => {
+                const values = [];
+                for (let i = 0; i <= 100; i += 5) {
+                    values.push(calculateCompressedValue(i, rate, state.sensitivity));
+                }
+                return {
+                    label: `圧縮率 ${Math.round(rate * 100)}%`,
+                    data: values,
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 1,
+                };
+            });
+            
+            compressionCurveChart = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: inputValues,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: { font: { size: 10 }, color: '#333' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#666' },
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#666' },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // チャート更新
+        function updateCharts() {
+            const inputValues = [];
+            const outputValues = [];
+            for (let i = 0; i <= 100; i += 5) {
+                inputValues.push(i);
+                outputValues.push(calculateCompressedValue(i, state.compression, state.sensitivity));
+            }
+            
+            comparisonChart.data.datasets[1].data = outputValues;
+            comparisonChart.update('none');
+            
+            // 圧縮曲線の更新
+            const compressionRates = [0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0];
+            compressionRates.forEach((rate, index) => {
+                const values = [];
+                for (let i = 0; i <= 100; i += 5) {
+                    values.push(calculateCompressedValue(i, rate, state.sensitivity));
+                }
+                compressionCurveChart.data.datasets[index].data = values;
+            });
+            compressionCurveChart.update('none');
+        }
+        
+        // スライダーイベント
+        inputScrollSlider.addEventListener('input', (e) => {
+            state.inputScroll = parseFloat(e.target.value);
+            inputScrollDisplay.textContent = Math.round(state.inputScroll);
+            updateDemo();
+        });
+        
+        compressionSlider.addEventListener('input', (e) => {
+            state.compression = parseFloat(e.target.value) / 100;
+            compressionDisplay.textContent = e.target.value + '%';
+            updateCharts();
+            updateDemo();
+        });
+        
+        sensitivitySlider.addEventListener('input', (e) => {
+            state.sensitivity = parseFloat(e.target.value);
+            sensitivityDisplay.textContent = state.sensitivity.toFixed(1) + 'x';
+            updateCharts();
+            updateDemo();
+        });
+        
+        // デモ更新
+        function updateDemo() {
+            const output = calculateCompressedValue(state.inputScroll, state.compression, state.sensitivity);
+            inputValue.textContent = Math.round(state.inputScroll);
+            outputValue.textContent = Math.round(output);
+            compressionRate.textContent = Math.round(state.compression * 100) + '%';
+            
+            // スクロール位置に反映
+            const scrollHeight = scrollDemo.scrollHeight - scrollDemo.clientHeight;
+            const normalizedOutput = (output / 100) * scrollHeight;
+            scrollDemo.scrollTop = normalizedOutput;
+        }
+        
+        // 初期化
+        initCharts();
+        updateDemo();
+    </script>
+</body>
+</html>
