@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2次関数のグラフ表示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .input-group input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            grid-column: 1 / -1;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #drawBtn {
+            background: #667eea;
+            color: white;
+            flex: 1;
+            max-width: 200px;
+        }
+
+        #drawBtn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #resetBtn {
+            background: #e0e0e0;
+            color: #333;
+            flex: 1;
+            max-width: 200px;
+        }
+
+        #resetBtn:hover {
+            background: #d0d0d0;
+            transform: translateY(-2px);
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        canvas {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .info {
+            background: #e3f2fd;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .equation {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .info-text {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 22px;
+                margin-bottom: 20px;
+            }
+
+            .controls {
+                gap: 15px;
+                padding: 15px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 2次関数のグラフ表示</h1>
+        
+        <div class="controls">
+            <div class="input-group">
+                <label for="a">a（二次の係数）</label>
+                <input type="number" id="a" value="1" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="b">b（一次の係数）</label>
+                <input type="number" id="b" value="0" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="c">c（定数項）</label>
+                <input type="number" id="c" value="0" step="0.1">
+            </div>
+            <div class="input-group">
+                <label for="xMin">x の最小値</label>
+                <input type="number" id="xMin" value="-10" step="1">
+            </div>
+            <div class="input-group">
+                <label for="xMax">x の最大値</label>
+                <input type="number" id="xMax" value="10" step="1">
+            </div>
+            <div class="input-group">
+                <label for="yMin">y の最小値</label>
+                <input type="number" id="yMin" value="-10" step="1">
+            </div>
+            <div class="input-group">
+                <label for="yMax">y の最大値</label>
+                <input type="number" id="yMax" value="20" step="1">
+            </div>
+            <div class="button-group">
+                <button id="drawBtn">グラフを描画</button>
+                <button id="resetBtn">リセット</button>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="graphCanvas" width="600" height="600"></canvas>
+        </div>
+
+        <div class="info">
+            <div class="equation" id="equation">y = x² + 0x + 0</div>
+            <div class="info-text"><strong>頂点:</strong> <span id="vertex">(0, 0)</span></div>
+            <div class="info-text"><strong>軸:</strong> <span id="axis">x = 0</span></div>
+            <div class="info-text"><strong>y切片:</strong> <span id="yIntercept">0</span></div>
+            <div class="info-text"><strong>判別式 D:</strong> <span id="discriminant">0</span></div>
+            <div class="info-text"><strong>x切片（根）:</strong> <span id="roots">x = 0</span></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+        const drawBtn = document.getElementById('drawBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function getInputValues() {
+            return {
+                a: parseFloat(document.getElementById('a').value) || 1,
+                b: parseFloat(document.getElementById('b').value) || 0,
+                c: parseFloat(document.getElementById('c').value) || 0,
+                xMin: parseFloat(document.getElementById('xMin').value) || -10,
+                xMax: parseFloat(document.getElementById('xMax').value) || 10,
+                yMin: parseFloat(document.getElementById('yMin').value) || -10,
+                yMax: parseFloat(document.getElementById('yMax').value) || 20,
+            };
+        }
+
+        function drawGraph() {
+            const { a, b, c, xMin, xMax, yMin, yMax } = getInputValues();
+
+            // キャンバスをクリア
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // グリッドラインと軸の描画
+            drawGridAndAxes(xMin, xMax, yMin, yMax);
+
+            // 2次関数をプロット
+            plotQuadraticFunction(a, b, c, xMin, xMax, yMin, yMax);
+
+            // 情報を更新
+            updateInfo(a, b, c);
+        }
+
+        function drawGridAndAxes(xMin, xMax, yMin, yMax) {
+            const padding = 50;
+            const plotWidth = canvas.width - 2 * padding;
+            const plotHeight = canvas.height - 2 * padding;
+
+            // グリッドラインの描画
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+
+            for (let i = Math.ceil(xMin); i <= Math.floor(xMax); i++) {
+                const x = padding + ((i - xMin) / (xMax - xMin)) * plotWidth;
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, canvas.height - padding);
+                ctx.stroke();
+            }
+
+            for (let i = Math.ceil(yMin); i <= Math.floor(yMax); i++) {
+                const y = canvas.height - padding - ((i - yMin) / (yMax - yMin)) * plotHeight;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(canvas.width - padding, y);
+                ctx.stroke();
+            }
+
+            // 軸の描画
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+
+            // x軸
+            const yAxisY = canvas.height - padding - ((0 - yMin) / (yMax - yMin)) * plotHeight;
+            ctx.beginPath();
+            ctx.moveTo(padding, yAxisY);
+            ctx.lineTo(canvas.width - padding, yAxisY);
+            ctx.stroke();
+
+            // y軸
+            const xAxisX = padding + ((0 - xMin) / (xMax - xMin)) * plotWidth;
+            ctx.beginPath();
+            ctx.moveTo(xAxisX, padding);
+            ctx.lineTo(xAxisX, canvas.height - padding);
+            ctx.stroke();
+
+            // ラベルの描画
+            ctx.fillStyle = '#000000';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            for (let i = Math.ceil(xMin); i <= Math.floor(xMax); i++) {
+                const x = padding + ((i - xMin) / (xMax - xMin)) * plotWidth;
+                ctx.fillText(i.toString(), x, canvas.height - padding + 15);
+            }
+
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+
+            for (let i = Math.ceil(yMin); i <= Math.floor(yMax); i++) {
+                const y = canvas.height - padding - ((i - yMin) / (yMax - yMin)) * plotHeight;
+                ctx.fillText(i.toString(), padding - 10, y);
+            }
+        }
+
+        function plotQuadraticFunction(a, b, c, xMin, xMax, yMin, yMax) {
+            const padding = 50;
+            const plotWidth = canvas.width - 2 * padding;
+            const plotHeight = canvas.height - 2 * padding;
+
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+
+            let isFirstPoint = true;
+
+            for (let x = xMin; x <= xMax; x += 0.05) {
+                const y = a * x * x + b * x + c;
+
+                if (y >= yMin && y <= yMax) {
+                    const canvasX = padding + ((x - xMin) / (xMax - xMin)) * plotWidth;
+                    const canvasY = canvas.height - padding - ((y - yMin) / (yMax - yMin)) * plotHeight;
+
+                    if (isFirstPoint) {
+                        ctx.moveTo(canvasX, canvasY);
+                        isFirstPoint = false;
+                    } else {
+                        ctx.lineTo(canvasX, canvasY);
+                    }
+                }
+            }
+
+            ctx.stroke();
+
+            // 頂点をマーク
+            const vertexX = -b / (2 * a);
+            const vertexY = a * vertexX * vertexX + b * vertexX + c;
+
+            if (vertexX >= xMin && vertexX <= xMax && vertexY >= yMin && vertexY <= yMax) {
+                const canvasX = padding + ((vertexX - xMin) / (xMax - xMin)) * plotWidth;
+                const canvasY = canvas.height - padding - ((vertexY - yMin) / (yMax - yMin)) * plotHeight;
+
+                ctx.fillStyle = '#ff6b6b';
+                ctx.beginPath();
+                ctx.arc(canvasX, canvasY, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        function updateInfo(a, b, c) {
+            // 方程式の表示
+            const bSign = b >= 0 ? '+' : '';
+            const cSign = c >= 0 ? '+' : '';
+            document.getElementById('equation').textContent = 
+                `y = ${a}x² ${bSign}${b}x ${cSign}${c}`;
+
+            // 頂点
+            const vertexX = -b / (2 * a);
+            const vertexY = a * vertexX * vertexX + b * vertexX + c;
+            document.getElementById('vertex').textContent = 
+                `(${vertexX.toFixed(2)}, ${vertexY.toFixed(2)})`;
+
+            // 軸
+            document.getElementById('axis').textContent = `x = ${vertexX.toFixed(2)}`;
+
+            // y切片
+            document.getElementById('yIntercept').textContent = c;
+
+            // 判別式
+            const D = b * b - 4 * a * c;
+            document.getElementById('discriminant').textContent = `D = ${D.toFixed(2)}`;
+
+            // x切片（根）
+            if (D >= 0) {
+                const x1 = (-b + Math.sqrt(D)) / (2 * a);
+                const x2 = (-b - Math.sqrt(D)) / (2 * a);
+                if (D === 0) {
+                    document.getElementById('roots').textContent = `x = ${x1.toFixed(2)}`;
+                } else {
+                    document.getElementById('roots').textContent = 
+                        `x = ${x1.toFixed(2)}, ${x2.toFixed(2)}`;
+                }
+            } else {
+                document.getElementById('roots').textContent = '実数根はありません（D < 0）';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('a').value = '1';
+            document.getElementById('b').value = '0';
+            document.getElementById('c').value = '0';
+            document.getElementById('xMin').value = '-10';
+            document.getElementById('xMax').value = '10';
+            document.getElementById('yMin').value = '-10';
+            document.getElementById('yMax').value = '20';
+            drawGraph();
+        }
+
+        drawBtn.addEventListener('click', drawGraph);
+        resetBtn.addEventListener('click', resetForm);
+
+        // 初期表示
+        drawGraph();
+    </script>
+</body>
+</html>
