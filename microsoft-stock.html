@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイクロソフト株価チャート</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-wrapper {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .chart-wrapper h2 {
+            color: #333;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        #historicalChart, #predictionChart {
+            max-height: 400px;
+        }
+        
+        .info-section {
+            background: #f0f4ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .info-section h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .info-section p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .back-link:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 マイクロソフト株価チャート</h1>
+        <p class="subtitle">過去20年の株価推移と2年後の予測</p>
+        
+        <div class="charts-grid">
+            <div class="chart-wrapper">
+                <h2>過去20年の株価推移</h2>
+                <canvas id="historicalChart"></canvas>
+            </div>
+            
+            <div class="chart-wrapper">
+                <h2>2年後の株価予測</h2>
+                <canvas id="predictionChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h3>📈 チャート説明</h3>
+            <p><strong>過去20年の株価推移：</strong>マイクロソフト（MSFT）の2004年から2024年までの年末終値を表示しています。</p>
+            <p><strong>2年後の株価予測：</strong>過去20年のデータを基に線形回帰分析で2026年までの株価を予測しています。</p>
+            <p><strong>注意：</strong>この予測は過去のトレンドに基づいた統計的な推定です。実際の株価変動は市場の様々な要因により変わる可能性があります。</p>
+        </div>
+        
+        <a href="index.html" class="back-link">← トップページに戻る</a>
+    </div>
+    
+    <script>
+        // 過去20年のマイクロソフト株価データ（年末終値、USドル）
+        const historicalData = [
+            { year: 2004, price: 27.59 },
+            { year: 2005, price: 27.18 },
+            { year: 2006, price: 30.75 },
+            { year: 2007, price: 35.03 },
+            { year: 2008, price: 19.33 },
+            { year: 2009, price: 30.48 },
+            { year: 2010, price: 28.23 },
+            { year: 2011, price: 25.52 },
+            { year: 2012, price: 26.64 },
+            { year: 2013, price: 37.04 },
+            { year: 2014, price: 46.27 },
+            { year: 2015, price: 54.17 },
+            { year: 2016, price: 59.98 },
+            { year: 2017, price: 84.97 },
+            { year: 2018, price: 101.96 },
+            { year: 2019, price: 157.70 },
+            { year: 2020, price: 222.16 },
+            { year: 2021, price: 336.04 },
+            { year: 2022, price: 239.65 },
+            { year: 2023, price: 370.90 },
+            { year: 2024, price: 418.00 }
+        ];
+        
+        // 線形回帰を使用して予測値を計算
+        function linearRegression(data) {
+            const n = data.length;
+            let sumX = 0, sumY = 0, sumXX = 0, sumXY = 0;
+            
+            data.forEach((point, index) => {
+                sumX += index;
+                sumY += point.price;
+                sumXX += index * index;
+                sumXY += index * point.price;
+            });
+            
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            return { slope, intercept };
+        }
+        
+        // 過去データから予測式を計算
+        const regression = linearRegression(historicalData);
+        
+        // 予測データ生成（2024年から2026年まで）
+        const predictionData = [];
+        for (let i = historicalData.length - 1; i < historicalData.length + 2; i++) {
+            const year = 2024 + (i - historicalData.length + 1);
+            const price = regression.intercept + regression.slope * i;
+            predictionData.push({ year, price: Math.max(price, 0) });
+        }
+        
+        // 合算データ（過去データ + 予測データ）
+        const combinedData = [...historicalData, ...predictionData.slice(1)];
+        
+        // 過去20年のチャート
+        const ctx1 = document.getElementById('historicalChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: historicalData.map(d => d.year),
+                datasets: [{
+                    label: 'マイクロソフト株価 (USD)',
+                    data: historicalData.map(d => d.price),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            font: { size: 12 },
+                            color: '#333'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: '株価 (USD)'
+                        },
+                        ticks: {
+                            color: '#666'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '年'
+                        },
+                        ticks: {
+                            color: '#666'
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 予測チャート
+        const ctx2 = document.getElementById('predictionChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: combinedData.map(d => d.year),
+                datasets: [
+                    {
+                        label: '過去の株価',
+                        data: [...historicalData.map(d => d.price), null, null],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 1,
+                        segment: {
+                            borderDash: (ctx) => ctx.p1DataIndex === historicalData.length - 1 ? [5, 5] : []
+                        }
+                    },
+                    {
+                        label: '予測株価',
+                        data: [null.repeat(historicalData.length - 1), ...predictionData.map(d => d.price)],
+                        borderColor: '#764ba2',
+                        borderWidth: 3,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#764ba2',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            font: { size: 12 },
+                            color: '#333'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: '株価 (USD)'
+                        },
+                        ticks: {
+                            color: '#666'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '年'
+                        },
+                        ticks: {
+                            color: '#666'
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
