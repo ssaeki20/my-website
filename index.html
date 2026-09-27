@@ -70,6 +70,48 @@
             font-size: 1.3rem;
             margin-right: 5px;
         }
+
+        .projects {
+            margin-top: 40px;
+            text-align: left;
+        }
+
+        .projects h2 {
+            text-align: center;
+        }
+
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .project-link {
+            display: block;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .project-link:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .project-link .emoji {
+            display: inline-block;
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
@@ -77,6 +119,15 @@
         <h1>✨ わたしのWebサイト ✨</h1>
         <h2>自己紹介</h2>
         <p><span class="emoji">📚</span>趣味は読書です</p>
+
+        <div class="projects">
+            <h2>プロジェクト</h2>
+            <div class="project-list">
+                <a href="quadratic-graph.html" class="project-link">
+                    <span class="emoji">📈</span>2次関数のグラフ表示
+                </a>
+            </div>
+        </div>
     </div>
 </body>
 </html>
