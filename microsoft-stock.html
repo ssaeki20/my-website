@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>マイクロソフト株価チャート</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -45,7 +44,7 @@
         
         .charts-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 30px;
             margin-bottom: 30px;
         }
@@ -64,8 +63,18 @@
             text-align: center;
         }
         
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        #combinedChart {
+            max-height: 450px;
+        }
+        
         #historicalChart, #predictionChart {
-            max-height: 400px;
+            max-height: 350px;
         }
         
         .info-section {
@@ -78,14 +87,55 @@
         
         .info-section h3 {
             color: #333;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             font-size: 1.1rem;
         }
         
         .info-section p {
             color: #555;
             line-height: 1.6;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .prediction-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .prediction-table th,
+        .prediction-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .prediction-table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .prediction-table tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .prediction-table .year-col {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .prediction-table .historical {
+            color: #667eea;
+            font-weight: 500;
+        }
+        
+        .prediction-table .prediction {
+            color: #764ba2;
+            font-weight: 500;
         }
         
         .back-link {
@@ -107,7 +157,7 @@
         }
         
         @media (max-width: 768px) {
-            .charts-grid {
+            .charts-row {
                 grid-template-columns: 1fr;
             }
             
@@ -124,24 +174,49 @@
 <body>
     <div class="container">
         <h1>📊 マイクロソフト株価チャート</h1>
-        <p class="subtitle">過去20年の株価推移と2年後の予測</p>
+        <p class="subtitle">過去20年の株価推移と2年後までの予測</p>
         
         <div class="charts-grid">
             <div class="chart-wrapper">
-                <h2>過去20年の株価推移</h2>
-                <canvas id="historicalChart"></canvas>
+                <h2>📈 過去20年と2年後までの予測</h2>
+                <canvas id="combinedChart"></canvas>
             </div>
-            
-            <div class="chart-wrapper">
-                <h2>2年後の株価予測</h2>
-                <canvas id="predictionChart"></canvas>
+        </div>
+        
+        <div class="charts-grid" style="margin-top: 20px;">
+            <div class="charts-row">
+                <div class="chart-wrapper">
+                    <h2>過去20年の株価推移</h2>
+                    <canvas id="historicalChart"></canvas>
+                </div>
+                
+                <div class="chart-wrapper">
+                    <h2>2026年までの予測</h2>
+                    <canvas id="predictionChart"></canvas>
+                </div>
             </div>
         </div>
         
         <div class="info-section">
-            <h3>📈 チャート説明</h3>
+            <h3>📊 株価予測一覧</h3>
+            <table class="prediction-table">
+                <thead>
+                    <tr>
+                        <th>年</th>
+                        <th>株価 (USD)</th>
+                        <th>種別</th>
+                    </tr>
+                </thead>
+                <tbody id="predictionTableBody">
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="info-section">
+            <h3>📝 チャート説明</h3>
             <p><strong>過去20年の株価推移：</strong>マイクロソフト（MSFT）の2004年から2024年までの年末終値を表示しています。</p>
-            <p><strong>2年後の株価予測：</strong>過去20年のデータを基に線形回帰分析で2026年までの株価を予測しています。</p>
+            <p><strong>2年後の株価予測：</strong>過去20年のデータを基に線形回帰分析で2025年・2026年の株価を予測しています。</p>
+            <p><strong>予測方法：</strong>過去のトレンドから最小二乗法で回帰直線を計算し、その延長線上で将来の株価を推定しています。</p>
             <p><strong>注意：</strong>この予測は過去のトレンドに基づいた統計的な推定です。実際の株価変動は市場の様々な要因により変わる可能性があります。</p>
         </div>
         
@@ -206,6 +281,21 @@
         // 合算データ（過去データ + 予測データ）
         const combinedData = [...historicalData, ...predictionData.slice(1)];
         
+        // 予測テーブルの生成
+        const tableBody = document.getElementById('predictionTableBody');
+        combinedData.forEach((data, index) => {
+            const row = document.createElement('tr');
+            const isHistorical = index < historicalData.length;
+            const typeClass = isHistorical ? 'historical' : 'prediction';
+            const typeText = isHistorical ? '実績' : '予測';
+            row.innerHTML = `
+                <td class="year-col">${data.year}年</td>
+                <td>$${data.price.toFixed(2)}</td>
+                <td class="${typeClass}">${typeText}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+        
         // 過去20年のチャート
         const ctx1 = document.getElementById('historicalChart').getContext('2d');
         new Chart(ctx1, {
@@ -269,8 +359,9 @@
             }
         });
         
-        // 予測チャート
+        // 予測チャート（過去データと予測データの組み合わせ）
         const ctx2 = document.getElementById('predictionChart').getContext('2d');
+        const historicalYears = historicalData.length;
         new Chart(ctx2, {
             type: 'line',
             data: {
@@ -288,15 +379,12 @@
                         pointBackgroundColor: '#667eea',
                         pointBorderColor: '#fff',
                         pointBorderWidth: 1,
-                        segment: {
-                            borderDash: (ctx) => ctx.p1DataIndex === historicalData.length - 1 ? [5, 5] : []
-                        }
                     },
                     {
                         label: '予測株価',
-                        data: [null.repeat(historicalData.length - 1), ...predictionData.map(d => d.price)],
+                        data: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, ...predictionData.map(d => d.price)],
                         borderColor: '#764ba2',
-                        borderWidth: 3,
+                        borderWidth: 2.5,
                         borderDash: [5, 5],
                         fill: false,
                         tension: 0.4,
@@ -341,6 +429,92 @@
                         },
                         ticks: {
                             color: '#666'
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 統合チャート（過去20年 + 2年予測）
+        const ctx3 = document.getElementById('combinedChart').getContext('2d');
+        new Chart(ctx3, {
+            type: 'line',
+            data: {
+                labels: combinedData.map(d => d.year),
+                datasets: [
+                    {
+                        label: '実績株価（2004-2024年）',
+                        data: [...historicalData.map(d => d.price), null, null],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 4,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 1.5,
+                    },
+                    {
+                        label: '予測株価（2025-2026年）',
+                        data: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, ...predictionData.map(d => d.price)],
+                        borderColor: '#764ba2',
+                        borderWidth: 3,
+                        borderDash: [8, 4],
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#764ba2',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 7,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            font: { size: 13 },
+                            color: '#333',
+                            padding: 15
+                        }
+                    },
+                    filler: {
+                        propagate: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: '株価 (USD)',
+                            font: { size: 12 }
+                        },
+                        ticks: {
+                            color: '#666',
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.08)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '年',
+                            font: { size: 12 }
+                        },
+                        ticks: {
+                            color: '#666',
+                            font: { size: 11 }
                         },
                         grid: {
                             display: false
