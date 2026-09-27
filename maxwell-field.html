@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マクセルの方程式 - 磁場の3次元表示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .input-group input,
+        .input-group select {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            grid-column: 1 / -1;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #drawBtn {
+            background: #667eea;
+            color: white;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        #drawBtn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #resetBtn {
+            background: #e0e0e0;
+            color: #333;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        #resetBtn:hover {
+            background: #d0d0d0;
+            transform: translateY(-2px);
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        canvas {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .info {
+            background: #e3f2fd;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .equation {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 16px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+
+        .info-section {
+            margin-bottom: 15px;
+        }
+
+        .info-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .info-text {
+            margin-bottom: 5px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 22px;
+                margin-bottom: 10px;
+            }
+
+            .subtitle {
+                font-size: 12px;
+                margin-bottom: 20px;
+            }
+
+            .controls {
+                gap: 15px;
+                padding: 15px;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+
+            canvas {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧲 マクセルの方程式 - 磁場の3次元表示</h1>
+        <p class="subtitle">直線電流周辺の磁場分布を可視化します</p>
+        
+        <div class="controls">
+            <div class="input-group">
+                <label for="current">電流 I (A)</label>
+                <input type="number" id="current" value="10" step="1" min="0.1" max="50">
+            </div>
+            <div class="input-group">
+                <label for="scale">スケール</label>
+                <input type="number" id="scale" value="1" step="0.1" min="0.1" max="5">
+            </div>
+            <div class="input-group">
+                <label for="rotation">回転角度 (度)</label>
+                <input type="number" id="rotation" value="0" step="1" min="0" max="360">
+            </div>
+            <div class="input-group">
+                <label for="field">表示モード</label>
+                <select id="field">
+                    <option value="magnitude">磁場の大きさ</option>
+                    <option value="direction">磁場の方向</option>
+                    <option value="both">両方</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button id="drawBtn">描画</button>
+                <button id="resetBtn">リセット</button>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="fieldCanvas" width="600" height="600"></canvas>
+        </div>
+
+        <div class="info">
+            <div class="equation">マクセルの方程式</div>
+            
+            <div class="info-section">
+                <div class="info-title">アンペールの法則（マクセルの第3式）</div>
+                <div class="info-text">∮ <strong>B</strong> · d<strong>l</strong> = μ₀I</div>
+                <div class="info-text">直線電流の周りの磁場は円形の磁力線を形成し、磁場の大きさは以下で与えられます：</div>
+                <div class="info-text" style="color: #d32f2f; font-weight: bold;">B = μ₀I / (2πr)</div>
+            </div>
+
+            <div class="info-section">
+                <div class="info-title">記号の説明</div>
+                <div class="info-text">
+                    • <strong>B</strong>：磁束密度（磁場）[T (テスラ)]<br>
+                    • <strong>I</strong>：電流 [A (アンペア)]<br>
+                    • <strong>r</strong>：電流からの距離 [m]<br>
+                    • μ₀：真空の透磁率 ≈ 4π × 10⁻⁷ [H/m]<br>
+                    • ∮：閉じた経路に沿う積分
+                </div>
+            </div>
+
+            <div class="info-section">
+                <div class="info-title">磁場の性質</div>
+                <div class="info-text">
+                    • 磁場は電流の周りに同心円を描く<br>
+                    • 右手の法則：親指が電流方向、指が磁場の方向<br>
+                    • 距離に反比例して磁場は弱くなる<br>
+                    • 磁場に起因する力：<strong>F</strong> = q(<strong>v</strong> × <strong>B</strong>)
+                </div>
+            </div>
+
+            <div class="info-section">
+                <div class="info-title">現在の設定</div>
+                <div class="info-text">電流: <span id="currentDisplay">10</span> A</div>
+                <div class="info-text">最大磁場強度（中心付近）: <span id="maxField">1.59</span> × 10⁻⁶ T</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('fieldCanvas');
+        const ctx = canvas.getContext('2d');
+        const drawBtn = document.getElementById('drawBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        // 物理定数
+        const MU_0 = 4 * Math.PI * 1e-7; // 真空の透磁率
+
+        function getInputValues() {
+            return {
+                current: parseFloat(document.getElementById('current').value) || 10,
+                scale: parseFloat(document.getElementById('scale').value) || 1,
+                rotation: parseFloat(document.getElementById('rotation').value) || 0,
+                field: document.getElementById('field').value || 'magnitude'
+            };
+        }
+
+        function calculateMagneticField(x, y, I) {
+            // 原点からの距離
+            const r = Math.sqrt(x * x + y * y);
+            
+            // r = 0 の場合は無限大になるので、最小値を設定
+            if (r < 0.001) return 1000; // 任意の大きな値
+            
+            // ビオ・サバール則から導出される直線電流の磁場
+            const B = (MU_0 * I) / (2 * Math.PI * r);
+            return B;
+        }
+
+        function drawMagneticField() {
+            const { current, scale, rotation, field } = getInputValues();
+            
+            // キャンバスをクリア
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const padding = 50;
+            const range = (canvas.width - 2 * padding) / 2 / scale;
+
+            // グリッドとスケール表示
+            drawGridAndScale(centerX, centerY, padding, range, scale);
+
+            // 磁場の可視化
+            if (field === 'magnitude' || field === 'both') {
+                drawMagnitudeMap(centerX, centerY, padding, range, current, rotation, scale);
+            }
+
+            if (field === 'direction' || field === 'both') {
+                drawFieldVectors(centerX, centerY, padding, range, current, rotation, scale);
+            }
+
+            // 電流の位置を表示
+            ctx.fillStyle = '#d32f2f';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('I', centerX, centerY - 15);
+
+            // 情報を更新
+            updateInfo(current);
+        }
+
+        function drawGridAndScale(centerX, centerY, padding, range, scale) {
+            // グリッドライン
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+
+            for (let i = -5; i <= 5; i++) {
+                const x = centerX + (i / scale) * (canvas.width - 2 * padding) / (2 * range / scale);
+                const y = centerY + (i / scale) * (canvas.height - 2 * padding) / (2 * range / scale);
+
+                // 縦線
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, canvas.height - padding);
+                ctx.stroke();
+
+                // 横線
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(canvas.width - padding, y);
+                ctx.stroke();
+            }
+
+            // 軸
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+
+            // x軸
+            ctx.beginPath();
+            ctx.moveTo(padding, centerY);
+            ctx.lineTo(canvas.width - padding, centerY);
+            ctx.stroke();
+
+            // y軸
+            ctx.beginPath();
+            ctx.moveTo(centerX, padding);
+            ctx.lineTo(centerX, canvas.height - padding);
+            ctx.stroke();
+
+            // ラベル
+            ctx.fillStyle = '#000000';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            for (let i = -2; i <= 2; i++) {
+                if (i === 0) continue;
+                const x = centerX + i * (canvas.width - 2 * padding) / (2 * scale);
+                const y = centerY + i * (canvas.height - 2 * padding) / (2 * scale);
+
+                ctx.fillText(i.toString(), x, centerY + 10);
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(i.toString(), centerX - 10, y);
+                ctx.textAlign = 'center';
+            }
+        }
+
+        function drawMagnitudeMap(centerX, centerY, padding, range, current, rotation, scale) {
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            const data = imageData.data;
+
+            const maxB = calculateMagneticField(0.1, 0, current);
+
+            for (let py = 0; py < canvas.height; py++) {
+                for (let px = 0; px < canvas.width; px++) {
+                    // キャンバス座標を物理座標に変換
+                    let x = (px - centerX) / ((canvas.width - 2 * padding) / (2 * range / scale));
+                    let y = (py - centerY) / ((canvas.height - 2 * padding) / (2 * range / scale));
+
+                    // 回転を適用
+                    const rad = (rotation * Math.PI) / 180;
+                    const x2 = x * Math.cos(rad) - y * Math.sin(rad);
+                    const y2 = x * Math.sin(rad) + y * Math.cos(rad);
+
+                    const B = calculateMagneticField(x2, y2, current);
+                    const normalized = Math.min(B / maxB, 1);
+
+                    // HSV色空間を使用してカラーマップを生成
+                    const hue = (1 - normalized) * 240; // 青から赤へ
+                    const rgb = hsvToRgb(hue, 1, 0.9);
+
+                    const idx = (py * canvas.width + px) * 4;
+                    data[idx] = rgb[0];
+                    data[idx + 1] = rgb[1];
+                    data[idx + 2] = rgb[2];
+                    data[idx + 3] = 255;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function drawFieldVectors(centerX, centerY, padding, range, current, rotation, scale) {
+            const spacing = 40;
+            const arrowLength = 20;
+
+            ctx.strokeStyle = '#333';
+            ctx.fillStyle = '#333';
+            ctx.lineWidth = 2;
+
+            for (let py = padding + spacing; py < canvas.height - padding; py += spacing) {
+                for (let px = padding + spacing; px < canvas.width - padding; px += spacing) {
+                    // キャンバス座標を物理座標に変換
+                    let x = (px - centerX) / ((canvas.width - 2 * padding) / (2 * range / scale));
+                    let y = (py - centerY) / ((canvas.height - 2 * padding) / (2 * range / scale));
+
+                    // 回転を適用
+                    const rad = (rotation * Math.PI) / 180;
+                    const x2 = x * Math.cos(rad) - y * Math.sin(rad);
+                    const y2 = x * Math.sin(rad) + y * Math.cos(rad);
+
+                    if (x2 * x2 + y2 * y2 < 0.01) continue;
+
+                    // 磁場の方向（右手の法則で円形）
+                    const angle = Math.atan2(y2, x2);
+                    const fieldAngle = angle + Math.PI / 2; // 電流に対して垂直
+
+                    // 矢印を描画
+                    const arrowEndX = px + arrowLength * Math.cos(fieldAngle);
+                    const arrowEndY = py + arrowLength * Math.sin(fieldAngle);
+
+                    ctx.beginPath();
+                    ctx.moveTo(px, py);
+                    ctx.lineTo(arrowEndX, arrowEndY);
+                    ctx.stroke();
+
+                    // 矢印の先端
+                    const arrowSize = 5;
+                    const angle1 = fieldAngle + 0.5;
+                    const angle2 = fieldAngle - 0.5;
+
+                    ctx.beginPath();
+                    ctx.moveTo(arrowEndX, arrowEndY);
+                    ctx.lineTo(arrowEndX - arrowSize * Math.cos(angle1), arrowEndY - arrowSize * Math.sin(angle1));
+                    ctx.lineTo(arrowEndX - arrowSize * Math.cos(angle2), arrowEndY - arrowSize * Math.sin(angle2));
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+        }
+
+        function hsvToRgb(h, s, v) {
+            const c = v * s;
+            const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+            const m = v - c;
+
+            let r, g, b;
+
+            if (h < 60) {
+                r = c; g = x; b = 0;
+            } else if (h < 120) {
+                r = x; g = c; b = 0;
+            } else if (h < 180) {
+                r = 0; g = c; b = x;
+            } else if (h < 240) {
+                r = 0; g = x; b = c;
+            } else if (h < 300) {
+                r = x; g = 0; b = c;
+            } else {
+                r = c; g = 0; b = x;
+            }
+
+            return [
+                Math.round((r + m) * 255),
+                Math.round((g + m) * 255),
+                Math.round((b + m) * 255)
+            ];
+        }
+
+        function updateInfo(current) {
+            document.getElementById('currentDisplay').textContent = current;
+            
+            // 中心付近（r = 0.01m）での磁場強度
+            const maxB = (MU_0 * current) / (2 * Math.PI * 0.01);
+            document.getElementById('maxField').textContent = (maxB / 1e-6).toFixed(2);
+        }
+
+        function resetForm() {
+            document.getElementById('current').value = '10';
+            document.getElementById('scale').value = '1';
+            document.getElementById('rotation').value = '0';
+            document.getElementById('field').value = 'magnitude';
+            drawMagneticField();
+        }
+
+        drawBtn.addEventListener('click', drawMagneticField);
+        resetBtn.addEventListener('click', resetForm);
+
+        // 初期表示
+        drawMagneticField();
+    </script>
+</body>
+</html>
