@@ -54,6 +54,8 @@
             padding: 20px;
             border-radius: 12px;
             border-left: 4px solid #667eea;
+            position: relative;
+            height: 450px;
         }
         
         .chart-wrapper h2 {
@@ -69,12 +71,13 @@
             gap: 30px;
         }
         
-        #combinedChart {
-            max-height: 450px;
+        .charts-row .chart-wrapper {
+            height: 350px;
         }
         
-        #historicalChart, #predictionChart {
-            max-height: 350px;
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
         }
         
         .info-section {
@@ -270,16 +273,16 @@
         // 過去データから予測式を計算
         const regression = linearRegression(historicalData);
         
-        // 予測データ生成（2024年から2026年まで）
+        // 予測データ生成（2025年・2026年）
         const predictionData = [];
-        for (let i = historicalData.length - 1; i < historicalData.length + 2; i++) {
+        for (let i = historicalData.length; i < historicalData.length + 2; i++) {
             const year = 2024 + (i - historicalData.length + 1);
             const price = regression.intercept + regression.slope * i;
             predictionData.push({ year, price: Math.max(price, 0) });
         }
         
         // 合算データ（過去データ + 予測データ）
-        const combinedData = [...historicalData, ...predictionData.slice(1)];
+        const combinedData = [...historicalData, ...predictionData];
         
         // 予測テーブルの生成
         const tableBody = document.getElementById('predictionTableBody');
@@ -319,7 +322,7 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: true,
@@ -361,7 +364,13 @@
         
         // 予測チャート（過去データと予測データの組み合わせ）
         const ctx2 = document.getElementById('predictionChart').getContext('2d');
-        const historicalYears = historicalData.length;
+        const historicalPrices = historicalData.map(d => d.price);
+        const predictionPrices = predictionData.map(d => d.price);
+        
+        // データの準備
+        const predictionChartData = Array(historicalData.length).fill(null).concat(predictionPrices);
+        const historicalChartData = historicalPrices.concat(Array(predictionData.length).fill(null));
+        
         new Chart(ctx2, {
             type: 'line',
             data: {
@@ -369,7 +378,7 @@
                 datasets: [
                     {
                         label: '過去の株価',
-                        data: [...historicalData.map(d => d.price), null, null],
+                        data: historicalChartData,
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
                         borderWidth: 3,
@@ -382,7 +391,7 @@
                     },
                     {
                         label: '予測株価',
-                        data: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, ...predictionData.map(d => d.price)],
+                        data: predictionChartData,
                         borderColor: '#764ba2',
                         borderWidth: 2.5,
                         borderDash: [5, 5],
@@ -398,7 +407,7 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: true,
@@ -440,6 +449,9 @@
         
         // 統合チャート（過去20年 + 2年予測）
         const ctx3 = document.getElementById('combinedChart').getContext('2d');
+        const combinedHistoricalData = historicalPrices.concat(Array(predictionData.length).fill(null));
+        const combinedPredictionData = Array(historicalData.length).fill(null).concat(predictionPrices);
+        
         new Chart(ctx3, {
             type: 'line',
             data: {
@@ -447,7 +459,7 @@
                 datasets: [
                     {
                         label: '実績株価（2004-2024年）',
-                        data: [...historicalData.map(d => d.price), null, null],
+                        data: combinedHistoricalData,
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
                         borderWidth: 4,
@@ -460,7 +472,7 @@
                     },
                     {
                         label: '予測株価（2025-2026年）',
-                        data: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, ...predictionData.map(d => d.price)],
+                        data: combinedPredictionData,
                         borderColor: '#764ba2',
                         borderWidth: 3,
                         borderDash: [8, 4],
@@ -476,7 +488,7 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: true,
