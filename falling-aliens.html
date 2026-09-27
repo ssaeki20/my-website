@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>落下するみかん星人</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .alien {
+            position: absolute;
+            font-size: 40px;
+            user-select: none;
+            pointer-events: none;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .instructions {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            font-size: 14px;
+            z-index: 100;
+        }
+
+        .instructions h2 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .instructions p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .info-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            font-size: 14px;
+            z-index: 100;
+        }
+
+        .info-panel span {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .instructions {
+                font-size: 12px;
+                padding: 15px;
+                top: 10px;
+                left: 10px;
+            }
+
+            .instructions h2 {
+                font-size: 14px;
+            }
+
+            .alien {
+                font-size: 30px;
+            }
+
+            .info-panel {
+                font-size: 12px;
+                padding: 10px 15px;
+                bottom: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container"></div>
+
+    <div class="instructions">
+        <h2>🍊 みかん星人ゲーム</h2>
+        <p>画面をクリックするとみかん星人が出現！<br>
+        重力に従って落下していきます。<br>
+        何個出現させられるかチャレンジ！</p>
+    </div>
+
+    <div class="info-panel">
+        出現数: <span id="count">0</span>個
+    </div>
+
+    <script>
+        const container = document.querySelector('.container');
+        const countDisplay = document.getElementById('count');
+        let alienCount = 0;
+
+        class FallingAlien {
+            constructor(x, y) {
+                this.element = document.createElement('div');
+                this.element.className = 'alien';
+                this.element.textContent = '🍊👽';
+                this.element.style.left = x + 'px';
+                this.element.style.top = y + 'px';
+                
+                container.appendChild(this.element);
+
+                this.x = x;
+                this.y = y;
+                this.velocityY = 0;
+                this.gravity = 0.3;
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = (Math.random() - 0.5) * 10;
+                this.windForce = (Math.random() - 0.5) * 0.2;
+
+                this.animate();
+            }
+
+            animate() {
+                // 重力を適用
+                this.velocityY += this.gravity;
+
+                // 位置を更新
+                this.y += this.velocityY;
+                this.x += this.windForce;
+
+                // 回転を更新
+                this.rotation += this.rotationSpeed;
+
+                // DOMを更新
+                this.element.style.top = this.y + 'px';
+                this.element.style.left = this.x + 'px';
+                this.element.style.transform = `rotate(${this.rotation}deg)`;
+
+                // 画面下部に到達したかチェック
+                if (this.y > window.innerHeight) {
+                    this.element.remove();
+                    return false;
+                }
+
+                // 画面外に出たかチェック（左右）
+                if (this.x < -50 || this.x > window.innerWidth) {
+                    this.element.remove();
+                    return false;
+                }
+
+                // 次のフレームをリクエスト
+                requestAnimationFrame(() => this.animate());
+                return true;
+            }
+        }
+
+        // クリックイベントリスナーを設定
+        document.addEventListener('click', (event) => {
+            const x = event.clientX;
+            const y = event.clientY;
+
+            new FallingAlien(x, y);
+            alienCount++;
+            countDisplay.textContent = alienCount;
+
+            // 軽いエフェクトを追加（クリック位置に放射状の波）
+            createRipple(x, y);
+        });
+
+        // リップルエフェクト
+        function createRipple(x, y) {
+            const ripple = document.createElement('div');
+            ripple.style.position = 'fixed';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            ripple.style.width = '10px';
+            ripple.style.height = '10px';
+            ripple.style.borderRadius = '50%';
+            ripple.style.border = '2px solid rgba(255, 255, 255, 0.5)';
+            ripple.style.pointerEvents = 'none';
+            ripple.style.transform = 'translate(-50%, -50%)';
+            ripple.style.animation = 'expandRipple 0.6s ease-out forwards';
+            ripple.style.zIndex = '50';
+
+            container.appendChild(ripple);
+
+            // アニメーション後に削除
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        // CSSアニメーション定義（animateを定義してスタイルシートに追加）
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes expandRipple {
+                to {
+                    width: 100px;
+                    height: 100px;
+                    border-color: rgba(255, 255, 255, 0);
+                    transform: translate(-50%, -50%);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 画面の説明
+        console.log('🍊 みかん星人ゲーム開始！\n画面をクリックしてみかん星人を落下させよう！');
+    </script>
+</body>
+</html>
