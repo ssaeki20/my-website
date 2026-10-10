@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>スクロールコンプレッサ可視化</title>
+    <title>スクロールコンプレッサシミュレーション</title>
     <style>
         * {
             margin: 0;
@@ -15,438 +15,179 @@
             font-family: 'Arial', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
         }
         
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
+            padding: 60px 40px;
+            max-width: 800px;
+            text-align: center;
         }
         
         h1 {
-            text-align: center;
+            font-size: 2.5rem;
             color: #333;
-            margin-bottom: 10px;
-            font-size: 2rem;
-        }
-        
-        .subtitle {
-            text-align: center;
-            color: #666;
             margin-bottom: 30px;
-            font-size: 0.95rem;
+            font-weight: 300;
+            letter-spacing: 2px;
         }
         
-        .controls {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .control-group {
-            margin-bottom: 15px;
-        }
-        
-        .control-group:last-child {
-            margin-bottom: 0;
-        }
-        
-        .control-group label {
-            display: block;
+        h2 {
+            font-size: 1.5rem;
+            color: #667eea;
+            margin: 30px 0 20px 0;
             font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
         }
         
-        .control-group input[type="range"] {
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: #e0e0e0;
-            outline: none;
-            -webkit-appearance: none;
-        }
-        
-        .control-group input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #667eea;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-        
-        .control-group input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #667eea;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-        
-        .value-display {
-            display: inline-block;
-            background: #667eea;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            margin-left: 10px;
-        }
-        
-        .visualizer {
-            background: #f0f4ff;
-            padding: 30px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            border-left: 4px solid #667eea;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .scroll-track {
-            background: #e0e0e0;
-            height: 80px;
-            border-radius: 8px;
-            position: relative;
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
-        
-        .scroll-item {
-            position: absolute;
-            height: 100%;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.05s linear;
-            top: 0;
-        }
-        
-        .item1 {
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            width: 15%;
-        }
-        
-        .item2 {
-            background: linear-gradient(90deg, #764ba2, #f093fb);
-            width: 20%;
-        }
-        
-        .item3 {
-            background: linear-gradient(90deg, #f093fb, #4facfe);
-            width: 18%;
-        }
-        
-        .item4 {
-            background: linear-gradient(90deg, #4facfe, #00f2fe);
-            width: 22%;
-        }
-        
-        .item5 {
-            background: linear-gradient(90deg, #00f2fe, #43e97b);
-            width: 25%;
+        p {
+            font-size: 1.1rem;
+            color: #555;
+            line-height: 1.8;
+            margin: 15px 0;
         }
         
         .info-box {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            background: #f8f9fa;
             border-left: 4px solid #667eea;
-        }
-        
-        .info-box .label {
-            font-weight: 600;
-            color: #333;
-            font-size: 0.9rem;
-            margin-bottom: 5px;
-        }
-        
-        .info-box .value {
-            color: #764ba2;
-            font-size: 1.1rem;
-            font-family: 'Courier New', monospace;
-            font-weight: 600;
-        }
-        
-        .info-section {
-            background: #f0f4ff;
             padding: 20px;
+            margin: 25px 0;
             border-radius: 8px;
-            margin-top: 30px;
-            border-left: 4px solid #667eea;
+            text-align: left;
         }
         
-        .info-section h3 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-        
-        .info-section p {
-            color: #555;
-            line-height: 1.6;
+        .info-box h3 {
+            color: #667eea;
             margin-bottom: 10px;
+            font-size: 1.2rem;
         }
         
-        .back-link {
+        .info-box ul {
+            margin-left: 20px;
+            color: #555;
+        }
+        
+        .info-box li {
+            margin: 8px 0;
+        }
+        
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 40px 0;
+        }
+        
+        .btn {
             display: inline-block;
-            margin-top: 30px;
-            padding: 10px 20px;
+            padding: 15px 40px;
             background: #667eea;
             color: white;
             text-decoration: none;
             border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1rem;
             transition: all 0.3s;
-            text-align: center;
+            border: 2px solid #667eea;
+            cursor: pointer;
         }
         
-        .back-link:hover {
+        .btn:hover {
             background: #764ba2;
+            border-color: #764ba2;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
         
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 15px;
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
         }
         
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-            }
-            
-            h1 {
-                font-size: 1.5rem;
-            }
-            
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
+        .btn-secondary:hover {
+            background: #f8f9fa;
+            color: #764ba2;
+            border-color: #764ba2;
+        }
+        
+        .emoji {
+            font-size: 1.3rem;
+            margin-right: 8px;
+        }
+        
+        .back-link {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .back-link a:hover {
+            color: #764ba2;
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎚️ スクロールコンプレッサ可視化</h1>
-        <p class="subtitle">スクロール速度の圧縮・緩和を動的に体験</p>
+        <h1><span class="emoji">🎚️</span>スクロールコンプレッサシミュレーション</h1>
         
-        <div class="controls">
-            <div class="control-group">
-                <label>
-                    スクロール速度 
-                    <span class="value-display" id="speedDisplay">1.0x</span>
-                </label>
-                <input type="range" id="scrollSpeedSlider" min="0.1" max="3" step="0.1" value="1.0">
-            </div>
-            
-            <div class="control-group">
-                <label>
-                    圧縮率 
-                    <span class="value-display" id="compressionDisplay">0%</span>
-                </label>
-                <input type="range" id="compressionSlider" min="0" max="100" step="5" value="0">
-            </div>
-            
-            <div class="control-group">
-                <label>
-                    マウス感度 
-                    <span class="value-display" id="sensitivityDisplay">1.0x</span>
-                </label>
-                <input type="range" id="sensitivitySlider" min="0.5" max="2" step="0.1" value="1.0">
-            </div>
+        <h2>プロジェクト説明</h2>
+        <p>
+            このシミュレーションは、HTML5 Canvas を使用してスクロールコンプレッサの動作を視覚的に表現したものです。
+            スクロール羽根が回転し、気体が段階的に圧縮される過程をアニメーションで表示します。
+        </p>
+        
+        <div class="info-box">
+            <h3>📚 スクロールコンプレッサとは</h3>
+            <p>
+                スクロールコンプレッサは、2つのスクロール形状の部品（固定スクロールと回転スクロール）が協動することで、
+                気体を圧縮する機械です。エアコンディショナーや冷凍機などに広く使用されています。
+            </p>
         </div>
         
-        <div class="visualizer">
-            <h2 style="color: #333; font-size: 1.1rem; margin-bottom: 20px;">📊 スクロール状態</h2>
-            
-            <div class="scroll-track" id="scrollTrack">
-                <div class="scroll-item item1">Item 1</div>
-                <div class="scroll-item item2">Item 2</div>
-                <div class="scroll-item item3">Item 3</div>
-                <div class="scroll-item item4">Item 4</div>
-                <div class="scroll-item item5">Item 5</div>
-            </div>
-            
-            <div class="stats-grid">
-                <div class="info-box">
-                    <div class="label">現在のスクロール位置</div>
-                    <div class="value" id="currentPosition">0px</div>
-                </div>
-                <div class="info-box">
-                    <div class="label">最大スクロール位置</div>
-                    <div class="value" id="maxPosition">0px</div>
-                </div>
-                <div class="info-box">
-                    <div class="label">スクロール進行度</div>
-                    <div class="value" id="progressPercent">0%</div>
-                </div>
-                <div class="info-box">
-                    <div class="label">圧縮後の位置</div>
-                    <div class="value" id="compressedPosition">0px</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="info-section">
-            <h3>📖 スクロールコンプレッサとは</h3>
-            <p><strong>定義：</strong>スクロールコンプレッサは、マウスホイールやトラックパッドの入力スクロール量を圧縮・緩和する機構です。</p>
-            <p><strong>機能：</strong></p>
-            <ul style="margin-left: 20px; color: #555; line-height: 1.8;">
-                <li>スクロール速度の調整：ユーザーのスクロール速度を一定の範囲内に正規化</li>
-                <li>スクロール圧縮：大きなスクロール入力を緩和し、スムーズな操作感を実現</li>
-                <li>感度調整：マウスやトラックパッドの環境差を吸収</li>
+        <div class="info-box">
+            <h3>✨ このシミュレーションの特徴</h3>
+            <ul>
+                <li>スクロール羽根の回転をリアルタイムでアニメーション</li>
+                <li>気体の流れを可視化する粒子表示</li>
+                <li>吸入・圧縮・吐出の各段階を色分け</li>
+                <li>レスポンシブデザイン対応</li>
             </ul>
-            <p style="margin-top: 15px;"><strong>実装例：</strong>Webアプリケーション、ゲーム、高度なUI/UXシステムで使用されます。</p>
         </div>
         
-        <a href="index.html" class="back-link">← トップページに戻る</a>
+        <div class="button-container">
+            <a href="https://github.com/ssaeki20/scroll-compressor-simulation" class="btn" target="_blank">
+                <span class="emoji">🚀</span>シミュレーションを実行
+            </a>
+            <a href="https://github.com/ssaeki20/scroll-compressor-simulation" class="btn btn-secondary" target="_blank">
+                <span class="emoji">📖</span>リポジトリを見る
+            </a>
+        </div>
+        
+        <div class="info-box">
+            <h3>🛠️ 使用技術</h3>
+            <ul>
+                <li>HTML5 Canvas</li>
+                <li>JavaScript ES6+</li>
+                <li>Canvas API による 2D グラフィックス描画</li>
+            </ul>
+        </div>
+        
+        <div class="back-link">
+            <a href="index.html">← わたしのWebサイトに戻る</a>
+        </div>
     </div>
-    
-    <script>
-        // DOM要素の取得
-        const scrollSpeedSlider = document.getElementById('scrollSpeedSlider');
-        const compressionSlider = document.getElementById('compressionSlider');
-        const sensitivitySlider = document.getElementById('sensitivitySlider');
-        const speedDisplay = document.getElementById('speedDisplay');
-        const compressionDisplay = document.getElementById('compressionDisplay');
-        const sensitivityDisplay = document.getElementById('sensitivityDisplay');
-        const scrollTrack = document.getElementById('scrollTrack');
-        const items = document.querySelectorAll('.scroll-item');
-        const currentPosition = document.getElementById('currentPosition');
-        const maxPosition = document.getElementById('maxPosition');
-        const progressPercent = document.getElementById('progressPercent');
-        const compressedPosition = document.getElementById('compressedPosition');
-        
-        // 状態管理
-        let state = {
-            position: 0,
-            velocity: 0,
-            maxPosition: 1000,
-            scrollSpeed: 1.0,
-            compressionRatio: 0,
-            sensitivity: 1.0,
-            lastTime: Date.now()
-        };
-        
-        // スライダーイベントリスナー
-        scrollSpeedSlider.addEventListener('input', (e) => {
-            state.scrollSpeed = parseFloat(e.target.value);
-            speedDisplay.textContent = state.scrollSpeed.toFixed(1) + 'x';
-        });
-        
-        compressionSlider.addEventListener('input', (e) => {
-            state.compressionRatio = parseFloat(e.target.value) / 100;
-            compressionDisplay.textContent = e.target.value + '%';
-        });
-        
-        sensitivitySlider.addEventListener('input', (e) => {
-            state.sensitivity = parseFloat(e.target.value);
-            sensitivityDisplay.textContent = state.sensitivity.toFixed(1) + 'x';
-        });
-        
-        // マウスホイールイベント
-        document.addEventListener('wheel', (e) => {
-            if (e.target.closest('.container')) {
-                e.preventDefault();
-                
-                // スクロール入力を取得
-                let delta = e.deltaY * state.sensitivity;
-                
-                // 圧縮処理：大きな入力を圧縮
-                if (state.compressionRatio > 0) {
-                    const compressionFactor = 1 - (state.compressionRatio * 0.8);
-                    delta *= compressionFactor;
-                }
-                
-                // スクロール速度を適用
-                delta *= state.scrollSpeed;
-                
-                // 位置を更新
-                state.position += delta * 0.1;
-                state.position = Math.max(0, Math.min(state.position, state.maxPosition));
-                
-                // UI更新
-                updateDisplay();
-            }
-        }, { passive: false });
-        
-        // タッチスクロール対応
-        let lastTouchY = 0;
-        scrollTrack.addEventListener('touchstart', (e) => {
-            lastTouchY = e.touches[0].clientY;
-        });
-        
-        scrollTrack.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const currentY = e.touches[0].clientY;
-            const delta = (lastTouchY - currentY) * state.sensitivity;
-            
-            if (state.compressionRatio > 0) {
-                const compressionFactor = 1 - (state.compressionRatio * 0.8);
-                delta *= compressionFactor;
-            }
-            
-            state.position += delta * state.scrollSpeed * 0.1;
-            state.position = Math.max(0, Math.min(state.position, state.maxPosition));
-            
-            lastTouchY = currentY;
-            updateDisplay();
-        }, { passive: false });
-        
-        // 表示更新
-        function updateDisplay() {
-            // スクロール圧縮のシミュレーション
-            const compressedPos = state.position * (1 - state.compressionRatio * 0.5);
-            const normalizedPos = (compressedPos / state.maxPosition) * 100;
-            
-            // 各アイテムの位置を更新
-            items.forEach((item, index) => {
-                const itemWidth = item.offsetWidth / scrollTrack.offsetWidth * 100;
-                const baseOffset = (index * 25 - normalizedPos) * 0.8;
-                item.style.left = baseOffset + '%';
-            });
-            
-            // 統計情報を更新
-            currentPosition.textContent = Math.round(state.position) + 'px';
-            maxPosition.textContent = state.maxPosition + 'px';
-            progressPercent.textContent = Math.round((state.position / state.maxPosition) * 100) + '%';
-            compressedPosition.textContent = Math.round(compressedPos) + 'px';
-        }
-        
-        // 初期化
-        updateDisplay();
-        
-        // キーボード操作対応
-        document.addEventListener('keydown', (e) => {
-            const step = 50;
-            if (e.key === 'ArrowDown') {
-                state.position = Math.min(state.position + step, state.maxPosition);
-                updateDisplay();
-            } else if (e.key === 'ArrowUp') {
-                state.position = Math.max(state.position - step, 0);
-                updateDisplay();
-            }
-        });
-    </script>
 </body>
 </html>
