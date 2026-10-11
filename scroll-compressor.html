@@ -16,6 +16,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 20px;
@@ -25,9 +26,9 @@
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 60px 40px;
-            max-width: 800px;
-            text-align: center;
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
         }
         
         h1 {
@@ -36,6 +37,7 @@
             margin-bottom: 30px;
             font-weight: 300;
             letter-spacing: 2px;
+            text-align: center;
         }
         
         h2 {
@@ -76,44 +78,68 @@
             margin: 8px 0;
         }
         
-        .button-container {
+        .canvas-container {
             display: flex;
-            flex-direction: column;
-            gap: 15px;
+            justify-content: center;
             margin: 40px 0;
+            background: #f0f0f0;
+            border-radius: 12px;
+            padding: 20px;
         }
         
-        .btn {
-            display: inline-block;
-            padding: 15px 40px;
+        canvas {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 30px;
             background: #667eea;
             color: white;
-            text-decoration: none;
+            border: none;
             border-radius: 8px;
             font-weight: 600;
-            font-size: 1.1rem;
-            transition: all 0.3s;
-            border: 2px solid #667eea;
+            font-size: 1rem;
             cursor: pointer;
+            transition: all 0.3s;
         }
         
-        .btn:hover {
+        button:hover {
             background: #764ba2;
-            border-color: #764ba2;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
         
-        .btn-secondary {
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
+        button:active {
+            transform: translateY(0);
         }
         
-        .btn-secondary:hover {
-            background: #f8f9fa;
-            color: #764ba2;
-            border-color: #764ba2;
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .speed-control label {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .speed-control input {
+            width: 150px;
+            cursor: pointer;
         }
         
         .emoji {
@@ -137,11 +163,47 @@
             color: #764ba2;
             text-decoration: underline;
         }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1><span class="emoji">🎚️</span>スクロールコンプレッサシミュレーション</h1>
+        
+        <h2>シミュレーション</h2>
+        <div class="canvas-container">
+            <canvas id="simulationCanvas" width="500" height="500"></canvas>
+        </div>
+        
+        <div class="controls">
+            <button id="playBtn" onclick="togglePlayPause()">
+                <span class="emoji">▶️</span>再生
+            </button>
+            <button onclick="resetSimulation()">
+                <span class="emoji">🔄</span>リセット
+            </button>
+            <div class="speed-control">
+                <label for="speedSlider">速度:</label>
+                <input type="range" id="speedSlider" min="0.5" max="3" step="0.5" value="1" onchange="updateSpeed()">
+            </div>
+        </div>
         
         <h2>プロジェクト説明</h2>
         <p>
@@ -163,17 +225,9 @@
                 <li>スクロール羽根の回転をリアルタイムでアニメーション</li>
                 <li>気体の流れを可視化する粒子表示</li>
                 <li>吸入・圧縮・吐出の各段階を色分け</li>
+                <li>再生/一時停止、速度調整が可能</li>
                 <li>レスポンシブデザイン対応</li>
             </ul>
-        </div>
-        
-        <div class="button-container">
-            <a href="https://ssaeki20.github.io/scroll-compressor-simulation/" class="btn" target="_blank">
-                <span class="emoji">🚀</span>シミュレーションを実行
-            </a>
-            <a href="https://github.com/ssaeki20/scroll-compressor-simulation" class="btn btn-secondary" target="_blank">
-                <span class="emoji">📖</span>リポジトリを見る
-            </a>
         </div>
         
         <div class="info-box">
@@ -189,5 +243,304 @@
             <a href="index.html">← わたしのWebサイトに戻る</a>
         </div>
     </div>
+
+    <script>
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let isPlaying = true;
+        let speed = 1;
+        let angle = 0;
+        let particles = [];
+        
+        const FIXED_SCROLL_POINTS = 30;
+        const ROTATING_SCROLL_POINTS = 30;
+        const CENTER_X = canvas.width / 2;
+        const CENTER_Y = canvas.height / 2;
+        const SCROLL_RADIUS = 80;
+        const OFFSET_DISTANCE = 40;
+        
+        class Particle {
+            constructor(x, y, stage) {
+                this.x = x;
+                this.y = y;
+                this.stage = stage; // 0: 吸入, 1: 圧縮, 2: 吐出
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.life = 255;
+                this.size = Math.random() * 1.5 + 0.5;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 3;
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+            }
+            
+            draw(ctx) {
+                const colors = ['#3498db', '#e74c3c', '#f39c12'];
+                ctx.fillStyle = colors[this.stage];
+                ctx.globalAlpha = this.life / 255;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+        
+        function getScrollPoint(t, isRotating) {
+            // スクロール形状を生成（インボリュート曲線の近似）
+            const r = SCROLL_RADIUS;
+            const offset = isRotating ? OFFSET_DISTANCE : 0;
+            
+            // 簡易的なスクロール形状
+            const angle = (t / (isRotating ? ROTATING_SCROLL_POINTS : FIXED_SCROLL_POINTS)) * Math.PI * 2;
+            const radius = r + (t / (isRotating ? ROTATING_SCROLL_POINTS : FIXED_SCROLL_POINTS)) * 20;
+            
+            let x = Math.cos(angle) * radius;
+            let y = Math.sin(angle) * radius;
+            
+            if (isRotating) {
+                // 回転するスクロールを回転させる
+                const rotAngle = angle;
+                const rotX = x * Math.cos(rotAngle) - y * Math.sin(rotAngle);
+                const rotY = x * Math.sin(rotAngle) + y * Math.cos(rotAngle);
+                x = rotX;
+                y = rotY;
+            }
+            
+            return { x: x + offset, y: y };
+        }
+        
+        function drawScroll(isRotating) {
+            ctx.strokeStyle = isRotating ? '#e74c3c' : '#3498db';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            const pointCount = isRotating ? ROTATING_SCROLL_POINTS : FIXED_SCROLL_POINTS;
+            
+            // スクロール羽根を2つ描画
+            for (let scroll = 0; scroll < 2; scroll++) {
+                ctx.beginPath();
+                const startAngle = scroll * Math.PI;
+                
+                for (let i = 0; i < pointCount; i++) {
+                    const t = i;
+                    let point = getScrollPoint(t, isRotating);
+                    
+                    let x = point.x;
+                    let y = point.y;
+                    
+                    if (isRotating) {
+                        // 回転スクロールを現在の角度で回転
+                        const cos = Math.cos(angle);
+                        const sin = Math.sin(angle);
+                        const rotX = x * cos - y * sin;
+                        const rotY = x * sin + y * cos;
+                        x = rotX;
+                        y = rotY;
+                    }
+                    
+                    const screenX = CENTER_X + x;
+                    const screenY = CENTER_Y + y;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(screenX, screenY);
+                    } else {
+                        ctx.lineTo(screenX, screenY);
+                    }
+                }
+                ctx.stroke();
+            }
+        }
+        
+        function drawFixedScroll() {
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // 固定スクロール（固定されているので2つのパターン）
+            for (let spiral = 0; spiral < 2; spiral++) {
+                ctx.beginPath();
+                for (let i = 0; i < FIXED_SCROLL_POINTS; i++) {
+                    const ratio = i / FIXED_SCROLL_POINTS;
+                    const angle = ratio * Math.PI * 2 + (spiral * Math.PI);
+                    const radius = SCROLL_RADIUS + ratio * 20;
+                    
+                    const x = Math.cos(angle) * radius;
+                    const y = Math.sin(angle) * radius;
+                    
+                    const screenX = CENTER_X + x;
+                    const screenY = CENTER_Y + y;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(screenX, screenY);
+                    } else {
+                        ctx.lineTo(screenX, screenY);
+                    }
+                }
+                ctx.stroke();
+            }
+        }
+        
+        function drawRotatingScroll() {
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            
+            // 回転スクロール（回転中）
+            for (let spiral = 0; spiral < 2; spiral++) {
+                ctx.beginPath();
+                for (let i = 0; i < ROTATING_SCROLL_POINTS; i++) {
+                    const ratio = i / ROTATING_SCROLL_POINTS;
+                    const localAngle = ratio * Math.PI * 2 + (spiral * Math.PI);
+                    const radius = SCROLL_RADIUS + ratio * 20 + OFFSET_DISTANCE;
+                    
+                    let x = Math.cos(localAngle) * radius;
+                    let y = Math.sin(localAngle) * radius;
+                    
+                    // 回転を適用
+                    const rotX = x * cos - y * sin;
+                    const rotY = x * sin + y * cos;
+                    
+                    const screenX = CENTER_X + rotX;
+                    const screenY = CENTER_Y + rotY;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(screenX, screenY);
+                    } else {
+                        ctx.lineTo(screenX, screenY);
+                    }
+                }
+                ctx.stroke();
+            }
+        }
+        
+        function generateParticles() {
+            // ランダムに粒子を生成
+            if (Math.random() < 0.3) {
+                const stageRand = Math.random();
+                let stage;
+                if (stageRand < 0.4) stage = 0; // 吸入
+                else if (stageRand < 0.7) stage = 1; // 圧縮
+                else stage = 2; // 吐出
+                
+                const angle2 = Math.random() * Math.PI * 2;
+                const distance = 30 + Math.random() * 40;
+                const x = CENTER_X + Math.cos(angle2) * distance;
+                const y = CENTER_Y + Math.sin(angle2) * distance;
+                
+                particles.push(new Particle(x, y, stage));
+            }
+        }
+        
+        function animate() {
+            // 背景をクリア
+            ctx.fillStyle = '#f9f9f9';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // グリッドを描画
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= canvas.width; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i <= canvas.height; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+            
+            // 中心マークを描画
+            ctx.fillStyle = '#999';
+            ctx.beginPath();
+            ctx.arc(CENTER_X, CENTER_Y, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // スクロールを描画
+            drawFixedScroll();
+            drawRotatingScroll();
+            
+            // 粒子を更新・描画
+            if (isPlaying) {
+                generateParticles();
+                angle += 0.02 * speed;
+                if (angle >= Math.PI * 2) {
+                    angle -= Math.PI * 2;
+                }
+            }
+            
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw(ctx);
+                
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+            
+            // 情報を表示
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`角度: ${(angle * 180 / Math.PI).toFixed(1)}°`, 10, 20);
+            ctx.fillText(`粒子数: ${particles.length}`, 10, 40);
+            ctx.fillText(`速度: ${speed.toFixed(1)}x`, 10, 60);
+            
+            // 凡例
+            ctx.fillStyle = '#3498db';
+            ctx.beginPath();
+            ctx.arc(canvas.width - 100, 20, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.fillText('固定スクロール', canvas.width - 90, 25);
+            
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.arc(canvas.width - 100, 45, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#333';
+            ctx.fillText('回転スクロール', canvas.width - 90, 50);
+            
+            requestAnimationFrame(animate);
+        }
+        
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('playBtn');
+            btn.innerHTML = isPlaying ? '<span class="emoji">⏸️</span>一時停止' : '<span class="emoji">▶️</span>再生';
+        }
+        
+        function resetSimulation() {
+            angle = 0;
+            particles = [];
+            isPlaying = true;
+            document.getElementById('playBtn').innerHTML = '<span class="emoji">⏸️</span>一時停止';
+        }
+        
+        function updateSpeed() {
+            const slider = document.getElementById('speedSlider');
+            speed = parseFloat(slider.value);
+        }
+        
+        // 初期状態を設定
+        document.getElementById('playBtn').innerHTML = '<span class="emoji">⏸️</span>一時停止';
+        
+        // アニメーション開始
+        animate();
+    </script>
 </body>
 </html>
